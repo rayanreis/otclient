@@ -1,5 +1,6 @@
 gameRootPanel = nil
 gameMapPanel = nil
+gameMapSidePanel = nil
 gameMainRightPanel = nil
 gameRightPanel = nil
 gameRightExtraPanel = nil
@@ -106,6 +107,7 @@ function init()
 
     bottomSplitter = gameRootPanel:getChildById('bottomSplitter')
     gameMapPanel = gameRootPanel:getChildById('gameMapPanel')
+    gameMapSidePanel = gameRootPanel:getChildById('gameMapSidePanel')
     gameMainRightPanel = gameRootPanel:getChildById('gameMainRightPanel')
     gameRightPanel = gameRootPanel:getChildById('gameRightPanel')
     gameRightExtraPanel = gameRootPanel:getChildById('gameRightExtraPanel')
@@ -129,6 +131,7 @@ function init()
 
     updateSidePanelButtons()
     applyMobileMargins()
+    updateRightMapSideLayout()
 
     panelsList = { {
         panel = gameRightPanel,
@@ -1665,12 +1668,36 @@ function getMainRightPanel()
     return gameMainRightPanel
 end
 
+function getMapSidePanel()
+    return gameMapSidePanel
+end
+
 function getLeftPanel()
     return gameLeftPanel
 end
 
 function getRightExtraPanel()
     return gameRightExtraPanel
+end
+
+-- Dual-column right sidebar: minimap spans both columns when the extra panel is on.
+local SIDE_PANEL_WIDTH = 176
+local SIDE_PANEL_GAP = 1
+
+function updateRightMapSideLayout()
+    if not gameMapSidePanel then
+        return
+    end
+
+    local dual = false
+    if currentViewMode ~= 2 and modules.client_options then
+        dual = modules.client_options.getOption('showRightExtraPanel')
+    end
+
+    local width = dual and (SIDE_PANEL_WIDTH * 2 + SIDE_PANEL_GAP) or SIDE_PANEL_WIDTH
+    if gameMapSidePanel:getWidth() ~= width then
+        gameMapSidePanel:setWidth(width)
+    end
 end
 
 function getLeftExtraPanel()
@@ -1818,6 +1845,7 @@ function setupViewMode(mode)
     applyMobileMargins()
     currentViewMode = mode
     applyExtendedViewLayout(mode == 2)
+    updateRightMapSideLayout()
 end
 
 function limitZoom()
@@ -1910,6 +1938,7 @@ function onIncreaseRightPanels()
     rightIncreaseSidePanels:setEnabled(false)
     rightDecreaseSidePanels:setEnabled(true)
     modules.client_options.setOption('showRightExtraPanel', true)
+    updateRightMapSideLayout()
     -- Update action bars when right extra panel is shown
     if modules.game_actionbar and modules.game_actionbar.updateVisibleWidgetsExternal then
         addEvent(function()
@@ -1923,6 +1952,7 @@ function onDecreaseRightPanels()
     rightDecreaseSidePanels:setEnabled(false)
     movePanel(gameRightExtraPanel)
     modules.client_options.setOption('showRightExtraPanel', false)
+    updateRightMapSideLayout()
     -- Update action bars when right extra panel is hidden
     if modules.game_actionbar and modules.game_actionbar.updateVisibleWidgetsExternal then
         addEvent(function()
@@ -1976,6 +2006,8 @@ function applyExtendedViewLayout(extendedView)
         gameBottomPanel:getChildById('rightResizeBorder'):setMaximum(gameBottomPanel:getWidth())
         gameBottomPanel:getChildById('bottomResizeBorder'):enable()
         gameBottomPanel:getChildById('rightResizeBorder'):enable()
+        gameMapSidePanel:setHeight(0)
+        gameMapSidePanel:setImageColor('alpha')
         gameMainRightPanel:setHeight(0)
         gameMainRightPanel:setImageColor('alpha')
         gameBottomPanel:addAnchor(AnchorTop, 'gameBottomActionPanel', AnchorBottom)
@@ -1986,6 +2018,8 @@ function applyExtendedViewLayout(extendedView)
         gameRightActionPanel:setBorderWidthLeft(0)
     else
         -- Reset to normal view
+        gameMapSidePanel:setHeight(162)
+        gameMapSidePanel:setImageColor('white')
         gameMainRightPanel:setHeight(200)
         gameMainRightPanel:setMarginTop(0)
         gameMainRightPanel:setImageColor('white')
@@ -1993,6 +2027,7 @@ function applyExtendedViewLayout(extendedView)
         gameRightActionPanel:setImageSource('/images/ui/actionbar/actionbar_background-light')
         gameLeftActionPanel:setBorderWidthRight(1)
         gameRightActionPanel:setBorderWidthLeft(1)
+        updateRightMapSideLayout()
         for _, btn in ipairs(buttons) do
             btn:setMarginTop(0)
             btn:show()

@@ -9,6 +9,85 @@ local currentDayTime = {
     h = 12,
     m = 0
 }
+local updatingMinimapSize = false
+local MINIMAP_MIN_HEIGHT = 116
+local MINIMAP_MAX_HEIGHT = 420
+local MINIMAP_DEFAULT_HEIGHT = 162
+
+local function clampMinimapHeight(height)
+    return math.min(MINIMAP_MAX_HEIGHT, math.max(MINIMAP_MIN_HEIGHT, tonumber(height) or MINIMAP_DEFAULT_HEIGHT))
+end
+
+local function readSettingNumber(key, defaultValue)
+    local value = g_settings.get(key)
+    if value == nil or value == '' then
+        return defaultValue
+    end
+    return tonumber(value) or defaultValue
+end
+
+local function writeSettingNumber(key, value)
+    g_settings.set(key, value)
+end
+
+local function applyMinimapHeight(height, persist)
+    local panel = mapController and mapController.ui
+    if not panel then
+        return
+    end
+
+    height = clampMinimapHeight(height)
+    if updatingMinimapSize then
+        return
+    end
+
+    updatingMinimapSize = true
+    panel.panelHeight = height
+    if panel:getHeight() ~= height then
+        panel:setHeight(height)
+    end
+
+    local mapSidePanel = modules.game_interface.getMapSidePanel and modules.game_interface.getMapSidePanel()
+    if mapSidePanel and mapSidePanel:getHeight() ~= height then
+        mapSidePanel:setHeight(height)
+    end
+
+    local resizeBorder = panel:getChildById('bottomResizeBorder')
+    if resizeBorder then
+        resizeBorder:setMinimum(MINIMAP_MIN_HEIGHT)
+        resizeBorder:setMaximum(MINIMAP_MAX_HEIGHT)
+    end
+
+    if modules.game_mainpanel and modules.game_mainpanel.reloadMainPanelSizes then
+        modules.game_mainpanel.reloadMainPanelSizes()
+    end
+
+    if persist then
+        writeSettingNumber('minimapPanelHeight', height)
+    end
+    updatingMinimapSize = false
+end
+
+local function setupMinimapResize()
+    local panel = mapController.ui
+    if not panel then
+        return
+    end
+
+    local savedHeight = readSettingNumber('minimapPanelHeight', panel.panelHeight or MINIMAP_DEFAULT_HEIGHT)
+    applyMinimapHeight(savedHeight, false)
+
+    if modules.game_interface.updateRightMapSideLayout then
+        modules.game_interface.updateRightMapSideLayout()
+    end
+
+    panel.onHeightChange = function(widget, height)
+        if updatingMinimapSize then
+            return
+        end
+        applyMinimapHeight(height, true)
+    end
+end
 
 local function importMinimapImages()
     if not g_resources.directoryExists('/minimap') then
@@ -67,7 +146,7 @@ local function onPositionChange()
 end
 
 mapController = Controller:new()
-mapController:setUI('minimap', modules.game_interface.getMainRightPanel())
+mapController:setUI('minimap', modules.game_interface.getMapSidePanel())
 
 function onChangeWorldTime(hour, minute)
 --[[ 
@@ -127,6 +206,7 @@ function mapController:onInit()
     self.ui.minimapBorder.minimap:getChildById('zoomInButton'):hide()
     self.ui.minimapBorder.minimap:getChildById('zoomOutButton'):hide()
     self.ui.minimapBorder.minimap:getChildById('resetButton'):hide()
+    setupMinimapResize()
 end
 
 function mapController:onGameStart()
@@ -137,6 +217,8 @@ function mapController:onGameStart()
     mapController:registerEvents(LocalPlayer, {
         onPositionChange = onPositionChange
     }):execute()
+
+    setupMinimapResize()
 
     -- Load Map
     g_minimap.clean()
@@ -299,11 +381,15 @@ function extendedView(extendedView)
         end
         mapController.ui:setBorderColor('alpha')
         mapController.ui:setBorderWidth(0)
-        local mainRightPanel = modules.game_interface.getMainRightPanel()
-        if not mainRightPanel:hasChild(mapController.ui) then
-            mainRightPanel:insertChild(1, mapController.ui)
+        local mapSidePanel = modules.game_interface.getMapSidePanel()
+        if mapSidePanel and not mapSidePanel:hasChild(mapController.ui) then
+            mapSidePanel:insertChild(1, mapController.ui)
         end
         mapController.ui:show()
+        applyMinimapHeight(mapController.ui.panelHeight or MINIMAP_DEFAULT_HEIGHT, false)
+        if modules.game_interface.updateRightMapSideLayout then
+            modules.game_interface.updateRightMapSideLayout()
+        end
 
     end
     mapController.ui.moveOnlyToMain = not extendedView

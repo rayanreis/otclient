@@ -4,6 +4,7 @@ Module
   author: edubart, BeniS
   website: https://github.com/edubart/otclient
   sandboxed: true
+  dependencies: [ game_interface ]
   scripts: [ minimap ]
   @onLoad: mapController:init()
   @onUnload: mapController:terminate()

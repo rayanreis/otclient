@@ -225,10 +225,21 @@ UIWidget
       width: 0
       visible: false
 
+  // Spans both right columns; minimap lives here so VIP/bags sit beside inventory under the map.
+  GameSidePanel
+    id: gameMapSidePanel
+    anchors.right: parent.right
+    anchors.top: parent.top
+    &ignoreFillAll: true
+    &onlyPhantomDrop: true
+    height: 162
+    focusable: false
+    on: true
+
   GameSidePanel
     id: gameMainRightPanel
     anchors.right: parent.right
-    anchors.top: parent.top
+    anchors.top: gameMapSidePanel.bottom
     &ignoreFillAll: true
     &onlyPhantomDrop: true
     height: 200
@@ -246,7 +257,7 @@ UIWidget
   GameSidePanel
     id: gameRightExtraPanel
     anchors.right: prev.left
-    anchors.top: parent.top
+    anchors.top: gameMapSidePanel.bottom
     anchors.bottom: parent.bottom
     margin-right: 1
     focusable: false

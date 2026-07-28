@@ -545,9 +545,12 @@ return {
         end
     },
     showRightExtraPanel               = {
-        value = false,
+        value = true,
         action = function(value, options, controller, panels, extraWidgets)
             modules.game_interface.getRightExtraPanel():setOn(value)
+            if modules.game_interface.updateRightMapSideLayout then
+                modules.game_interface.updateRightMapSideLayout()
+            end
             -- Update action bars when right extra panel visibility changes
             if modules.game_actionbar and modules.game_actionbar.updateVisibleWidgetsExternal then
                 addEvent(function()
