@@ -1,7 +1,17 @@
-local musicFilename = 'sounds/startup'
+local musicFilename = '/sounds/startup'
 local musicChannel = nil
 if g_sounds then
     musicChannel = g_sounds.getChannel(SoundChannels.Music)
+end
+
+local function hasStartupMusic()
+    return g_resources.fileExists(musicFilename) or g_resources.fileExists(musicFilename .. '.ogg')
+end
+
+local function playStartupMusic(fadeTime)
+    if musicChannel and hasStartupMusic() then
+        musicChannel:enqueue(musicFilename, fadeTime or 3)
+    end
 end
 
 function setMusic(filename)
@@ -9,13 +19,13 @@ function setMusic(filename)
 
     if not g_game.isOnline() then
         musicChannel:stop()
-        musicChannel:enqueue(musicFilename, 3)
+        playStartupMusic(3)
     end
 end
 
 function startup()
     if musicChannel then
-        musicChannel:enqueue(musicFilename, 3)
+        playStartupMusic(3)
         connect(g_game, {
             onGameStart = function()
                 musicChannel:stop(3)
@@ -24,7 +34,7 @@ function startup()
         connect(g_game, {
             onGameEnd = function()
                 g_sounds.stopAll()
-                musicChannel:enqueue(musicFilename, 3)
+                playStartupMusic(3)
             end
         })
     end
@@ -64,7 +74,7 @@ function init()
         })
     end
 
-    if musicChannel then
+    if musicChannel and hasStartupMusic() then
         g_sounds.preload(musicFilename)
     end
 end

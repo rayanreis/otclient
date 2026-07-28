@@ -118,15 +118,35 @@ local function getPageLabelHistory()
 end
 
 local function setImagenHttp(widget, url, isIcon)
+    local normalizedUrl = tostring(url or ""):gsub("^/+", "")
+    local localImagePath = "/game_store/images/" .. normalizedUrl
+
+    local function applyLocalImageOrError()
+        if g_resources.fileExists(localImagePath) then
+            if isIcon then
+                widget:setIcon(localImagePath)
+            else
+                widget:setImageSource(localImagePath)
+            end
+            return true
+        end
+
+        if isIcon then
+            widget:setIcon("/game_store/images/dynamic-image-error")
+        else
+            widget:setImageSource("/game_store/images/dynamic-image-error")
+            widget:setImageFixedRatio(false)
+        end
+        return false
+    end
+
     if GameStore.website.IMAGES_URL then
-        HTTP.downloadImage(GameStore.website.IMAGES_URL .. url, function(path, err)
+        local baseUrl = tostring(GameStore.website.IMAGES_URL):gsub("/+$", "")
+        local remoteUrl = baseUrl .. "/" .. normalizedUrl
+        HTTP.downloadImage(remoteUrl, function(path, err)
             if err then
-                g_logger.warning("HTTP error: " .. err .. " - " .. GameStore.website.IMAGES_URL .. url)
-                if isIcon then
-                    widget:setIcon("/game_store/images/dynamic-image-error")
-                else
-                    widget:setImageSource("/game_store/images/dynamic-image-error")
-                    widget:setImageFixedRatio(false)
+                if not applyLocalImageOrError() then
+                    g_logger.warning("HTTP error: " .. err .. " - " .. remoteUrl)
                 end
                 return
             end
@@ -137,13 +157,7 @@ local function setImagenHttp(widget, url, isIcon)
             end
         end)
     else
-        if not g_resources.fileExists("/game_store/images/" .. url) then
-            widget:setImageSource("/game_store/images/dynamic-image-error")
-            widget:setImageFixedRatio(false)
-        else
-            widget:setImageSource("/game_store/images/" .. url)
-        end
-
+        applyLocalImageOrError()
     end
 end
 

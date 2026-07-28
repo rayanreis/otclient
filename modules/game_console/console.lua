@@ -439,11 +439,9 @@ function switchChatOnCall()
         local message = consoleTextEdit:getText()
         if message == '' then
             if not isChatEnabled() then
-                -- opening chat from walk mode: make it temporary ('*') when returnDisablesChat is on,
-                -- so a single Enter later sends the message and returns to WASD (Tibia-like)
-                if modules.client_options.getOption('returnDisablesChat') then
-                    walkAfterSend = true
-                end
+                -- Opening chat with Enter while in WASD mode should always be temporary:
+                -- the next Enter sends the message and returns control to walking.
+                walkAfterSend = true
                 toggleChat()
             elseif walkAfterSend or modules.client_options.getOption('returnDisablesChat') then
                 -- empty Enter: cancel temporary chat / disable chat -> back to WASD

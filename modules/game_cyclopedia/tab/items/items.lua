@@ -617,7 +617,8 @@ function Cyclopedia.Items.onChangeCustomPrice(widget)
 end
 
 function showItems()
-    UI = g_ui.loadUI("items", contentContainer)
+    -- Use explicit module-relative path to avoid lookup falling back to root (/items.otui).
+    UI = g_ui.loadUI("tab/items/items", contentContainer)
     UI:show()
     Cyclopedia.Items.VocFilter = false
     Cyclopedia.Items.LevelFilter = false

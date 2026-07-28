@@ -181,6 +181,10 @@ void SoundSource::removeEffect()
 {
     if (m_effectId != 0) {
         m_effectId = 0;
+        if (m_sourceId == 0 || alIsSource(m_sourceId) != AL_TRUE) {
+            alGetError(); // clear any stale OpenAL error state for callers
+            return;
+        }
         alSource3i(m_sourceId, AL_AUXILIARY_SEND_FILTER, AL_EFFECTSLOT_NULL, 0, AL_FILTER_NULL);
         const ALenum err = alGetError();
         if (err != AL_NO_ERROR) {

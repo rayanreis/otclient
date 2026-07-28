@@ -10,6 +10,32 @@ local currentDayTime = {
     m = 0
 }
 
+local function importMinimapImages()
+    if not g_resources.directoryExists('/minimap') then
+        return false
+    end
+
+    local importedAny = false
+    for _, fileName in ipairs(g_resources.listDirectoryFiles('/minimap')) do
+        local x, y, z = fileName:match('^Minimap_Color_(%d+)_(%d+)_(%d+)%.png$')
+        if x and y and z then
+            local imagePath = '/minimap/' .. fileName
+            local imported = g_minimap.loadImage(imagePath, {
+                x = tonumber(x),
+                y = tonumber(y),
+                z = tonumber(z)
+            }, 1.0)
+            importedAny = imported or importedAny
+        end
+    end
+
+    if importedAny and otmm then
+        g_minimap.saveOtmm('/minimap.otmm')
+    end
+
+    return importedAny
+end
+
 local function refreshVirtualFloors()
     mapController.ui.layersPanel.layersMark:setMarginTop(((virtualFloor + 1) * 4) - 3)
     mapController.ui.layersPanel.automapLayers:setImageClip((virtualFloor * 14) .. ' 0 14 67')
@@ -129,6 +155,8 @@ function mapController:onGameStart()
     if g_resources.fileExists(minimapFile) then
         loadFnc(minimapFile)
     end
+
+    importMinimapImages()
 
     self.ui.minimapBorder.minimap:load()
 end
