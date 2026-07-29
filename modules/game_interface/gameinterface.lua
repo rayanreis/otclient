@@ -20,9 +20,7 @@ countWindow = nil
 logoutWindow = nil
 exitWindow = nil
 bottomSplitter = nil
--- timestamp of the last manual keyboard walk, refreshed by game_walk and read
--- by consumers (e.g. game_bot) to pause automation while the player walks;
--- defined here so it is always present whenever this module is loaded
+-- timestamp of the last manual keyboard walk, refreshed by game_walk
 lastManualWalk = 0
 limitedZoom = false
 currentViewMode = 0
@@ -905,12 +903,6 @@ function createThingMenu(menuPosition, lookThing, useThing, creatureThing)
                 end
             end
         end
-    end
-
-    if modules.game_bot and useThing and useThing:isItem() then
-        menu:addSeparator()
-        local useThingId = useThing:getId()
-        menu:addOption("ID: " .. useThingId, function() g_window.setClipboardText(useThingId) end)
     end
 
     if g_game.getFeature(GameThingQuickLoot) and modules.game_quickloot and lookThing and not lookThing:isCreature() and lookThing:isPickupable() then

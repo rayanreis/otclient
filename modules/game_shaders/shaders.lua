@@ -114,11 +114,9 @@ local function attachShaders()
     local map = modules.game_interface.getMapPanel()
     map:setShader('Default')
 
-    local player = g_game.getLocalPlayer()
-    if player then
-        player:setShader('Default')
-        player:setMountShader('Default')
-    end
+    -- Do not reset local player outfit/mount shaders here.
+    -- The server may already have sent an ascended outline (or other) shader
+    -- during login; wiping it made the mark only appear after a floor change.
 end
 
 local registerShader = function(opts, method)
