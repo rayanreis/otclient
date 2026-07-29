@@ -657,7 +657,9 @@ function stashController:onGameStart()
     if version < 1180 then
         return
     end
-    g_ui.importStyle('game_stash')
+    -- Absolute module path: onGameStart has no Lua source path, so relative
+    -- "game_stash" resolves to /game_stash.otui and fails.
+    g_ui.importStyle('/game_stash/game_stash')
     stashController:registerEvents(g_game, {
         onSupplyStashEnter = onSupplyStashEnter
     })

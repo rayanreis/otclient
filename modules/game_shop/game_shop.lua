@@ -90,7 +90,12 @@ function create()
     if gameShopWindow then
         return
     end
-    gameShopWindow = g_ui.displayUI("game_shop")
+    -- Absolute module path: onGameStart callbacks have no Lua source path,
+    -- so relative "game_shop" resolves to /game_shop.otui and fails.
+    gameShopWindow = g_ui.displayUI("/game_shop/game_shop")
+    if not gameShopWindow then
+        return
+    end
     gameShopWindow:hide()
 
     local protocolGame = g_game.getProtocolGame()
@@ -663,7 +668,7 @@ function changeName()
         return
     end
 
-    changeNameWindow = g_ui.displayUI("changename")
+    changeNameWindow = g_ui.displayUI("/game_shop/changename")
 end
 
 function confirmChangeName()
@@ -788,7 +793,7 @@ end
 
 function createTransferWindow()
     if not transferWindow then
-        transferWindow = g_ui.displayUI("giftcoins")
+        transferWindow = g_ui.displayUI("/game_shop/giftcoins")
         transferWindow:hide()
     end
 end
