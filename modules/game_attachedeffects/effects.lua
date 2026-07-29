@@ -106,6 +106,35 @@ AttachedEffectManager.register(8, 'Ki', '/images/game/effects/ki', ThingExternal
     --fade = { 0, 100, 1000 },
 })
 
+-- Skull summon auras: soft rings around the monster (no Ki), tinted by tier.
+-- Thing id 8 = yellow rings — a small tile-level mark that sits around the creature.
+AttachedEffectManager.register(20, 'Skull Aura Green', 8, ThingCategoryEffect, {
+    opacity = 0.5,
+    speed = 0.75,
+    shader = 'Effect - SkullGreen',
+    offset = { 0, 0, false },
+    pulse = { 0, 5, 3200 },
+    drawOnUI = false,
+})
+
+AttachedEffectManager.register(21, 'Skull Aura Red', 8, ThingCategoryEffect, {
+    opacity = 0.5,
+    speed = 0.75,
+    shader = 'Effect - SkullRed',
+    offset = { 0, 0, false },
+    pulse = { 0, 5, 3200 },
+    drawOnUI = false,
+})
+
+AttachedEffectManager.register(22, 'Skull Aura Black', 8, ThingCategoryEffect, {
+    opacity = 0.55,
+    speed = 0.75,
+    shader = 'Effect - SkullBlack',
+    offset = { 0, 0, false },
+    pulse = { 0, 5, 3200 },
+    drawOnUI = false,
+})
+
 AttachedEffectManager.register(9, 'Thunder', '/images/game/effects/thunder', ThingExternalTexture, {
     loop = 1,
     offset = { 215, 230 }

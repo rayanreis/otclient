@@ -647,6 +647,18 @@ ThingPtr Tile::getTopMultiUseThing()
             return thing;
     }
 
+    // Prefer usable items first. Exercise dummies are often onBottom and would
+    // otherwise lose to ground borders in the generic fallbacks below.
+    for (auto it = m_things.rbegin(); it != m_things.rend(); ++it) {
+        const auto& thing = *it;
+        if (!thing->isItem())
+            continue;
+        if (thing->isGround() || thing->isGroundBorder() || thing->isSplash())
+            continue;
+        if (thing->isUsable())
+            return thing;
+    }
+
     for (int8_t i = -1, s = m_things.size(); ++i < s;) {
         const auto& thing = m_things[i];
         if (!thing->isGround() && !thing->isGroundBorder() && !thing->isOnBottom() && !thing->isOnTop()) {

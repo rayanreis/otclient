@@ -280,6 +280,18 @@ void UIMap::onHoverChange(bool hovered)
         resetCursorToDefault();
 }
 
+void UIMap::updateHoveredTile(const Point& mousePos)
+{
+    const auto& pos = getPosition(mousePos);
+    if (!pos.isValid())
+        return;
+
+    if (m_mapView->getLastMousePosition() != pos) {
+        m_mapView->onMouseMove(pos);
+        m_mapView->setLastMousePosition(pos);
+    }
+}
+
 bool UIMap::onMouseMove(const Point& mousePos, const Point& mouseMoved)
 {
     const auto& pos = getPosition(mousePos);

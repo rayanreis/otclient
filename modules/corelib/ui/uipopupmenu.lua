@@ -65,8 +65,16 @@ end
 function UIPopupMenu:addOption(optionName, optionCallback, shortcut, disabled)
     local optionWidget = g_ui.createWidget(self:getStyleName() .. 'Button', self)
     optionWidget.onClick = function(widget)
+        -- Capture callback before destroy; defer so Use with / Trade with can
+        -- arm mouse grab + cursor after this click fully settles.
+        local callback = optionCallback
+        local menuPos = self:getPosition()
         self:destroy()
-        optionCallback(self:getPosition())
+        if callback then
+            scheduleEvent(function()
+                callback(menuPos)
+            end, 1)
+        end
     end
     optionWidget:setText(optionName)
     local width = optionWidget:getTextSize().width + optionWidget:getMarginLeft() + optionWidget:getMarginRight() + 15

@@ -363,7 +363,8 @@ ExtendedIds = {
     Game = 4,
     Particles = 5,
     MapShader = 6,
-    NeedsUpdate = 7
+    NeedsUpdate = 7,
+    SkullSummon = 202
 }
 
 PreviewState = {

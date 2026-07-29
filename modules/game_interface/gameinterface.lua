@@ -472,108 +472,286 @@ function updateStretchShrink()
     end
 end
 
+local selectedThing = nil
+local selectedType = nil
+local suppressGrabberRelease = false
+local useWithCursorName = nil
+local restoredMapCursorAnimations = nil
+local savedCrosshairOption = nil
+local useWithMarkWidget = nil
+
+local function destroyUseWithMark()
+    if useWithMarkWidget and not useWithMarkWidget:isDestroyed() then
+        useWithMarkWidget:destroy()
+    end
+    useWithMarkWidget = nil
+end
+
+local function ensureUseWithMark()
+    if useWithMarkWidget and not useWithMarkWidget:isDestroyed() then
+        return useWithMarkWidget
+    end
+    if not gameRootPanel then
+        return nil
+    end
+
+    useWithMarkWidget = g_ui.createWidget('UIWidget', gameRootPanel)
+    useWithMarkWidget:setId('useWithCrosshairMark')
+    useWithMarkWidget:setPhantom(true)
+    useWithMarkWidget:setFocusable(false)
+    useWithMarkWidget:setSize({
+        width = 32,
+        height = 32
+    })
+    useWithMarkWidget:setImageSource('/images/game/crosshair/default')
+    useWithMarkWidget:raise()
+    return useWithMarkWidget
+end
+
+local function updateUseWithVisuals(mousePosition)
+    -- Prefer the OS crosshair: custom pixmap cursors often fail to show on WSL/X11
+    -- even when pushCursor succeeds and targeting still works.
+    g_window.setSystemCursor('cross')
+
+    local mark = ensureUseWithMark()
+    if mark and mousePosition then
+        mark:setVisible(true)
+        mark:setPosition({
+            x = mousePosition.x - 16,
+            y = mousePosition.y - 16
+        })
+        mark:raise()
+    end
+
+    if gameMapPanel and mousePosition then
+        if gameMapPanel.updateHoveredTile then
+            gameMapPanel:updateHoveredTile(mousePosition)
+        end
+    end
+end
+
+local function clearUseWithCursor()
+    destroyUseWithMark()
+
+    if savedCrosshairOption ~= nil and gameMapPanel then
+        local previous = savedCrosshairOption
+        savedCrosshairOption = nil
+        if previous and previous ~= 'disabled' then
+            gameMapPanel:setCrosshairTexture('/images/game/crosshair/' .. previous)
+        else
+            gameMapPanel:setCrosshairTexture('')
+        end
+    end
+
+    if useWithCursorName then
+        g_mouse.popCursor(useWithCursorName)
+        useWithCursorName = nil
+    end
+    g_window.restoreMouseCursor()
+
+    -- Restore map hover cursors if we disabled them for targeting.
+    if restoredMapCursorAnimations ~= nil and gameMapPanel then
+        gameMapPanel:setCursorAnimations(restoredMapCursorAnimations)
+        restoredMapCursorAnimations = nil
+    end
+end
+
+local function pushUseWithCursor(mousePosition)
+    -- Pause map animated cursors so they cannot overwrite the crosshair each mouse move.
+    if gameMapPanel and restoredMapCursorAnimations == nil then
+        restoredMapCursorAnimations = modules.client_options and
+            modules.client_options.getOption('showAnimatedCursor') or false
+        gameMapPanel:setCursorAnimations(false)
+    end
+
+    -- Force the tile crosshair on while targeting (even if the option is Disabled).
+    if gameMapPanel and savedCrosshairOption == nil then
+        savedCrosshairOption = modules.client_options and
+            modules.client_options.getOption('crosshair') or 'disabled'
+        gameMapPanel:setCrosshairTexture('/images/game/crosshair/default')
+    end
+
+    -- Keep a cursor on the stack so MapView hover cursors stay suppressed.
+    if not useWithCursorName then
+        g_mouse.pushCursor('target')
+        useWithCursorName = 'target'
+    end
+
+    updateUseWithVisuals(mousePosition or g_window.getMousePosition())
+end
+
 function onMouseGrabberRelease(self, mousePosition, mouseButton)
     if selectedThing == nil then
         return false
     end
+
+    -- Ignore releases that fire while targeting is still being armed
+    -- (same-frame leftovers from the click that started Use with).
+    if suppressGrabberRelease then
+        return true
+    end
+
     if mouseButton == MouseLeftButton then
         local clickedWidget = gameRootPanel:recursiveGetChildByPos(mousePosition, false)
-        if clickedWidget then
-            if selectedType == 'use' then
-                onUseWith(clickedWidget, mousePosition)
-            elseif selectedType == 'trade' then
-                onTradeWith(clickedWidget, mousePosition)
-            end
+        if selectedType == 'use' then
+            onUseWith(clickedWidget, mousePosition)
+        elseif selectedType == 'trade' then
+            onTradeWith(clickedWidget, mousePosition)
         end
     end
 
     selectedThing = nil
-    -- Restore cursor
-    if modules.client_options and modules.client_options.getOption('nativeCursor') then
-        g_window.restoreMouseCursor()
-    else
-        g_mouse.popCursor('target')
+    selectedType = nil
+    suppressGrabberRelease = false
+    if mouseGrabberWidget then
+        mouseGrabberWidget.onMouseMove = nil
     end
+    clearUseWithCursor()
     self:ungrabMouse()
     return true
 end
 
-function onUseWith(clickedWidget, mousePosition)
-    if clickedWidget:getClassName() == 'UIGameMap' then
-        local tile = clickedWidget:getTile(mousePosition)
-        if tile then
-            if selectedThing:isFluidContainer() or selectedThing:isMultiUse() then
-                g_game.useWith(selectedThing, tile:getTopMultiUseThing())
-            else
-                g_game.useWith(selectedThing, tile:getTopUseThing())
+local function useWithOnMap(mousePosition)
+    if not gameMapPanel or not gameMapPanel:containsPoint(mousePosition) then
+        return false
+    end
+    local tile = gameMapPanel:getTile(mousePosition)
+    if not tile then
+        return false
+    end
+
+    local toThing
+    if selectedThing:isFluidContainer() or selectedThing:isMultiUse() then
+        -- Prefer usable map objects (exercise dummies are often onBottom and
+        -- getTopMultiUseThing can otherwise resolve borders/ground instead).
+        local items = tile:getItems()
+        if items then
+            for i = #items, 1, -1 do
+                local item = items[i]
+                if item and item:isUsable() and not item:isGround() and not item:isGroundBorder() then
+                    toThing = item
+                    break
+                end
             end
         end
-    elseif clickedWidget:getClassName() == 'UIItem' and not clickedWidget:isVirtual() then
-        g_game.useWith(selectedThing, clickedWidget:getItem())
-    elseif clickedWidget:getClassName() == 'UICreatureButton' then
-        local creature = clickedWidget:getCreature()
-        if creature then
-            g_game.useWith(selectedThing, creature)
+        if not toThing then
+            toThing = tile:getTopMultiUseThing()
+        end
+    else
+        toThing = tile:getTopUseThing()
+    end
+    if not toThing then
+        return false
+    end
+    g_game.useWith(selectedThing, toThing)
+    return true
+end
+
+function onUseWith(clickedWidget, mousePosition)
+    if clickedWidget then
+        local className = clickedWidget:getClassName()
+        if className == 'UIGameMap' then
+            useWithOnMap(mousePosition)
+            return
+        elseif className == 'UIItem' and not clickedWidget:isVirtual() then
+            local item = clickedWidget:getItem()
+            if item then
+                g_game.useWith(selectedThing, item)
+            end
+            return
+        elseif className == 'UICreatureButton' then
+            local creature = clickedWidget:getCreature()
+            if creature then
+                g_game.useWith(selectedThing, creature)
+            end
+            return
+        end
+
+        -- Overlays (text messages, health circles, etc.) can sit above the map.
+        local widget = clickedWidget:getParent()
+        while widget do
+            if widget:getClassName() == 'UIGameMap' then
+                useWithOnMap(mousePosition)
+                return
+            end
+            widget = widget:getParent()
         end
     end
+
+    useWithOnMap(mousePosition)
 end
 
 function onTradeWith(clickedWidget, mousePosition)
-    if clickedWidget:getClassName() == 'UIGameMap' then
-        local tile = clickedWidget:getTile(mousePosition)
+    if clickedWidget then
+        local className = clickedWidget:getClassName()
+        if className == 'UIGameMap' then
+            local tile = clickedWidget:getTile(mousePosition)
+            if tile then
+                g_game.requestTrade(selectedThing, tile:getTopCreature())
+            end
+            return
+        elseif className == 'UICreatureButton' then
+            local creature = clickedWidget:getCreature()
+            if creature then
+                g_game.requestTrade(selectedThing, creature)
+            end
+            return
+        end
+    end
+
+    if gameMapPanel and gameMapPanel:containsPoint(mousePosition) then
+        local tile = gameMapPanel:getTile(mousePosition)
         if tile then
             g_game.requestTrade(selectedThing, tile:getTopCreature())
         end
-    elseif clickedWidget:getClassName() == 'UICreatureButton' then
-        local creature = clickedWidget:getCreature()
-        if creature then
-            g_game.requestTrade(selectedThing, creature)
-        end
     end
+end
+
+local function armMouseGrabber(thing, grabType)
+    if not thing or not mouseGrabberWidget then
+        return
+    end
+
+    selectedType = grabType
+    selectedThing = thing
+    -- Show crosshair immediately so the player gets feedback even before grab arms.
+    suppressGrabberRelease = true
+    pushUseWithCursor(g_window.getMousePosition())
+
+    local function activate()
+        if selectedThing ~= thing or selectedType ~= grabType then
+            return
+        end
+
+        -- grabMouse replaces any current receiver (menu leftovers, etc.)
+        mouseGrabberWidget:grabMouse()
+        pushUseWithCursor(g_window.getMousePosition())
+
+        -- Keep re-asserting visuals while targeting (map/UI hover can steal the cursor).
+        mouseGrabberWidget.onMouseMove = function(_, mousePosition)
+            if selectedThing and (selectedType == 'use' or selectedType == 'trade') then
+                updateUseWithVisuals(mousePosition)
+            end
+        end
+
+        -- Allow the next intentional click to complete/cancel use-with.
+        scheduleEvent(function()
+            if selectedThing == thing and selectedType == grabType then
+                suppressGrabberRelease = false
+            end
+        end, 50)
+    end
+
+    -- Let the activating click (right-click / menu option) finish first.
+    scheduleEvent(activate, 1)
 end
 
 function startUseWith(thing)
-    if not thing then
-        return
-    end
-    if g_ui.isMouseGrabbed() then
-        if selectedThing then
-            selectedThing = thing
-            selectedType = 'use'
-        end
-        return
-    end
-    selectedType = 'use'
-    selectedThing = thing
-    mouseGrabberWidget:grabMouse()
-    -- Use native cursor when enabled, otherwise use custom cursor
-    if modules.client_options and modules.client_options.getOption('nativeCursor') then
-        g_window.setSystemCursor('cross')
-    else
-        g_mouse.pushCursor('target')
-    end
+    armMouseGrabber(thing, 'use')
 end
 
 function startTradeWith(thing)
-    if not thing then
-        return
-    end
-    if g_ui.isMouseGrabbed() then
-        if selectedThing then
-            selectedThing = thing
-            selectedType = 'trade'
-        end
-        return
-    end
-    selectedType = 'trade'
-    selectedThing = thing
-    mouseGrabberWidget:grabMouse()
-    -- Use native cursor when enabled, otherwise use custom cursor
-    if modules.client_options and modules.client_options.getOption('nativeCursor') then
-        g_window.setSystemCursor('cross')
-    else
-        g_mouse.pushCursor('target')
-    end
+    armMouseGrabber(thing, 'trade')
 end
 
 function isMenuHookCategoryEmpty(category)

@@ -1479,6 +1479,33 @@ function init()
     Keybind.new("Windows", "Show/hide battle list", "Ctrl+B", "")
     Keybind.bind("Windows", "Show/hide battle list", {{ type = KEY_DOWN, callback = toggle }})
 
+    -- Space (chat off / WASD mode): attack nearest, then cycle nearby creatures by distance
+    Keybind.new("Combat", "Attack next target", {
+        [CHAT_MODE.ON] = "",
+        [CHAT_MODE.OFF] = "Space"
+    }, "")
+    Keybind.bind("Combat", "Attack next target", {
+        {
+            type = KEY_DOWN,
+            callback = function()
+                attackNext()
+            end
+        }
+    }, modules.game_interface.getRootPanel())
+
+    Keybind.new("Combat", "Attack previous target", {
+        [CHAT_MODE.ON] = "",
+        [CHAT_MODE.OFF] = "Shift+Space"
+    }, "")
+    Keybind.bind("Combat", "Attack previous target", {
+        {
+            type = KEY_DOWN,
+            callback = function()
+                attackNext(true)
+            end
+        }
+    }, modules.game_interface.getRootPanel())
+
     -- Setup scrollbar - use default MiniWindow behavior
     local scrollbar = battleWindow:getChildById('miniwindowScrollBar')
     if scrollbar then
@@ -1986,57 +2013,114 @@ function toggleFilterPanel() -- Switching modes of filter panel (hide/show)
     end
 end
 
-function attackNext(previous)
-    local foundTarget = false
-    local firstElement = nil
-    local lastElement = nil
-    local prevElement = nil
-    local nextElement = nil
-
-    local mainInstance = BattleListManager.instances[0]
-    if not mainInstance or not mainInstance.panel then
-        return
-    end
-
-    local children = mainInstance.panel:getChildren()
-
-    for _, battleButton in pairs(mainInstance.panel:getChildren()) do
-        if battleButton:isVisible() then
-            -- select visible first child
-            if not firstElement then
-                firstElement = battleButton
-            end
-            lastElement = battleButton
-
-            if battleButton.isTarget then
-                foundTarget = true
-            elseif foundTarget and not nextElement then
-                nextElement = battleButton
-            elseif not foundTarget then
-                prevElement = battleButton
-            end
-        end
-    end
-
-    if foundTarget then
-        if previous then
-            if prevElement then
-                g_game.attack(prevElement.creature)
-            else
-                g_game.attack(lastElement.creature)
-            end
-        else
-            if nextElement then
-                g_game.attack(nextElement.creature)
-            else
-                g_game.attack(firstElement.creature)
-            end
-        end
-    elseif firstElement then
-        g_game.attack(firstElement.creature)
-    else
+local function isAttackableCreature(creature, playerPos, safeFight)
+    if not creature or creature:isLocalPlayer() or creature:isDead() or creature:isNpc() then
         return false
     end
+
+    if not creature:canBeSeen() then
+        return false
+    end
+
+    local pos = creature:getPosition()
+    if not pos or pos.z ~= playerPos.z then
+        return false
+    end
+
+    -- Safe fight: skip players
+    if safeFight and creature:isPlayer() then
+        return false
+    end
+
+    return true
+end
+
+local function getNearbyAttackCandidates()
+    local player = g_game.getLocalPlayer()
+    if not player then
+        return {}
+    end
+
+    local playerPos = player:getPosition()
+    if not playerPos then
+        return {}
+    end
+
+    local spectators = g_map.getSpectators(playerPos, false) or {}
+    if #spectators == 0 and modules.game_interface and modules.game_interface.getMapPanel then
+        local mapPanel = modules.game_interface.getMapPanel()
+        if mapPanel and mapPanel.getSpectators then
+            spectators = mapPanel:getSpectators() or {}
+        end
+    end
+
+    local safeFight = g_game.isSafeFight()
+    local candidates = {}
+
+    for _, creature in ipairs(spectators) do
+        if isAttackableCreature(creature, playerPos, safeFight) then
+            candidates[#candidates + 1] = {
+                creature = creature,
+                distance = getDistanceBetween(playerPos, creature:getPosition()),
+                id = creature:getId()
+            }
+        end
+    end
+
+    table.sort(candidates, function(a, b)
+        if a.distance ~= b.distance then
+            return a.distance < b.distance
+        end
+        return a.id < b.id
+    end)
+
+    return candidates
+end
+
+function attackNext(previous)
+    if not g_game.isOnline() then
+        return false
+    end
+
+    local candidates = getNearbyAttackCandidates()
+    if #candidates == 0 then
+        return false
+    end
+
+    local current = g_game.getAttackingCreature()
+    local currentIndex = nil
+    if current then
+        local currentId = current:getId()
+        for i, entry in ipairs(candidates) do
+            if entry.id == currentId then
+                currentIndex = i
+                break
+            end
+        end
+    end
+
+    local targetEntry
+    if currentIndex then
+        if previous then
+            targetEntry = candidates[currentIndex > 1 and (currentIndex - 1) or #candidates]
+        else
+            targetEntry = candidates[currentIndex < #candidates and (currentIndex + 1) or 1]
+        end
+    else
+        -- No current target: pick closest (or furthest when going previous)
+        targetEntry = previous and candidates[#candidates] or candidates[1]
+    end
+
+    if not targetEntry or not targetEntry.creature then
+        return false
+    end
+
+    -- Re-attacking the same creature cancels the attack in g_game.attack — skip that.
+    if current and targetEntry.id == current:getId() then
+        return true
+    end
+
+    g_game.attack(targetEntry.creature)
     return true
 end
 
@@ -2609,6 +2693,8 @@ function terminate() -- Terminating the Module (unload)
     toggleFilterButton = nil
 
     Keybind.delete("Windows", "Show/hide battle list")
+    Keybind.delete("Combat", "Attack next target")
+    Keybind.delete("Combat", "Attack previous target")
 
     disconnect(g_game, {
         onAttackingCreatureChange = onAttack,

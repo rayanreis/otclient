@@ -72,6 +72,9 @@ public:
     Size getVisibleDimension();
     float getMinimumAmbientLight();
     void setCrosshairTexture(const std::string& texturePath);
+    // Update map hover tile even when the map is not the mouse receiver
+    // (e.g. use-with / trade-with mouse grabber owns input).
+    void updateHoveredTile(const Point& mousePos);
     void setDrawHighlightTarget(bool enable);
     void setCursorAnimations(bool enable);
     void setAntiAliasingMode(Otc::AntialiasingMode mode);

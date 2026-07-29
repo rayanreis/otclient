@@ -3103,6 +3103,9 @@ function UIMap:getSightSpectators(multiFloor) end
 ---@param texturePath string
 function UIMap:setCrosshairTexture(texturePath) end
 
+---@param mousePos Point
+function UIMap:updateHoveredTile(mousePos) end
+
 ---@param enable boolean
 function UIMap:setDrawHighlightTarget(enable) end
 

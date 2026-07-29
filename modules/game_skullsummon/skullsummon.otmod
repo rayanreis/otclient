@@ -1,0 +1,11 @@
+Module
+  name: game_skullsummon
+  description: Colored SD warning effects for skull summons
+  author: canary
+  website:
+  sandboxed: true
+  autoload: true
+  scripts: [ skullsummon ]
+  dependencies: [ game_shaders, gamelib ]
+  @onLoad: init()
+  @onUnload: terminate()

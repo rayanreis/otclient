@@ -86,6 +86,19 @@ local OUTFIT_SHADERS = { {
     frag = 'shaders/fragment/forge_failed.frag'
 }, }
 
+local EFFECT_SHADERS = { {
+    -- No framebuffer: these tint shaders only sample the current pixel.
+    -- useFramebuffer=true on map-drawn effects breaks floor shadows.
+    name = 'Effect - SkullGreen',
+    frag = 'shaders/fragment/skull_green.frag'
+}, {
+    name = 'Effect - SkullRed',
+    frag = 'shaders/fragment/skull_red.frag'
+}, {
+    name = 'Effect - SkullBlack',
+    frag = 'shaders/fragment/skull_black.frag'
+} }
+
 local MOUNT_SHADERS = { {
     name = 'Mount - Default',
     frag = nil
@@ -146,6 +159,10 @@ function ShaderController:onInit()
     end
 
     for _, opts in pairs(OUTFIT_SHADERS) do
+        registerShader(opts, 'setupOutfitShader')
+    end
+
+    for _, opts in pairs(EFFECT_SHADERS) do
         registerShader(opts, 'setupOutfitShader')
     end
 
