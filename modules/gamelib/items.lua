@@ -201,4 +201,5 @@ function ItemsDatabase.setTier(widget, item, isSmall)
     widget.tier:setVisible(true)
 end
 
-
+-- Plural alias kept for compatibility with newer call sites.
+ItemsDatabase.setTiers = ItemsDatabase.setTier

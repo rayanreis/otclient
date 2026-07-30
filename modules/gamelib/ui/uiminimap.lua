@@ -143,14 +143,71 @@ function UIMinimap:setCrossPosition(pos)
     end
 end
 
+local POSITION_GEM_MARK_ICON = 20
+local POSITION_GEM_CLEAR_ICON = 21
+local POSITION_GEM_DESCRIPTION_PREFIX = 'Position Gem'
+
+local function isPositionGemFlag(flag)
+    if tonumber(flag.icon) == POSITION_GEM_MARK_ICON then
+        return true
+    end
+
+    local description = flag.description or ''
+    return description:find('^' .. POSITION_GEM_DESCRIPTION_PREFIX, 1, false) ~= nil
+end
+
+function UIMinimap:removePositionGemFlags()
+    local toRemove = {}
+    for _, flag in pairs(self.flags) do
+        if isPositionGemFlag(flag) then
+            table.insert(toRemove, flag)
+        end
+    end
+    for _, flag in ipairs(toRemove) do
+        flag:destroy()
+    end
+end
+
 function UIMinimap:addFlag(pos, icon, description, temporary)
-    if not pos or not icon then
+    if not pos or icon == nil then
         return
     end
-    local flag = self:getFlag(pos, icon, description)
-    if flag or not icon then
+
+    local function applyFlagIcon(flagWidget, flagIcon)
+        if type(tonumber(flagIcon)) == 'number' then
+            flagWidget:setIcon('/images/game/minimap/flag' .. flagIcon)
+        else
+            flagWidget:setIcon(resolvepath(flagIcon, 1))
+        end
+    end
+
+    local iconNumber = tonumber(icon)
+
+    -- Transparent clear mark from the server: drop whatever is at that tile.
+    if iconNumber == POSITION_GEM_CLEAR_ICON then
+        local flag = self:getFlag(pos)
+        if flag then
+            flag:destroy()
+        end
         return
     end
+
+    -- Position Gem allows only one active mark; remove leftovers from earlier uses
+    -- (including marks restored from local Minimap settings).
+    if iconNumber == POSITION_GEM_MARK_ICON then
+        self:removePositionGemFlags()
+    end
+
+    local flag = self:getFlag(pos)
+    if flag then
+        flag.description = description
+        flag.icon = icon
+        flag.temporary = temporary or false
+        applyFlagIcon(flag, icon)
+        flag:setTooltip(description)
+        return
+    end
+
     temporary = temporary or false
 
     flag = g_ui.createWidget('MinimapFlag')
@@ -159,11 +216,7 @@ function UIMinimap:addFlag(pos, icon, description, temporary)
     flag.description = description
     flag.icon = icon
     flag.temporary = temporary
-    if type(tonumber(icon)) == 'number' then
-        flag:setIcon('/images/game/minimap/flag' .. icon)
-    else
-        flag:setIcon(resolvepath(icon, 1))
-    end
+    applyFlagIcon(flag, icon)
     flag:setTooltip(description)
     flag.onMouseRelease = onFlagMouseRelease
     flag.onDestroy = function()

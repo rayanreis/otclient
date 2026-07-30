@@ -120,6 +120,7 @@ void UIItem::setItemId(const int id)
         m_item->setShader(m_shaderName);
 
     callLuaField("onItemChange");
+    repaint();
 }
 
 void UIItem::setItemCount(const int count)
@@ -140,10 +141,10 @@ void UIItem::setItem(const ItemPtr& item)
 {
     m_item = item;
     m_displayCount = 0;
-    if (item)
-        m_itemId = item->getClientId();
+    m_itemId = item ? item->getClientId() : 0;
 
     callLuaField("onItemChange");
+    repaint();
 }
 
 void UIItem::onStyleApply(const std::string_view styleName, const OTMLNodePtr& styleNode)

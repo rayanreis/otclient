@@ -219,10 +219,13 @@ R LuaObject::callLuaField(const std::string_view field, const T&... args)
 template<typename... T>
 void LuaObject::callLuaField(const std::string_view field, const T&... args)
 {
-    const std::string fieldStr = field.data();
+    const std::string fieldStr{ field };
 
-    // Avoids unnecessary overhead by checking if the field is registered before invoking the Lua event.
-    auto it = m_events.find(fieldStr);
+    // Skip only when this object was explicitly marked as having no such event.
+    // Do not permanently cache misses: login packets often fire before modules
+    // connect handlers (e.g. LocalPlayer.onInventoryChange), and caching false
+    // would permanently drop later inventory/UI updates (ghost equipped items).
+    const auto it = m_events.find(fieldStr);
     if (it != m_events.end() && !it->second)
         return;
 
@@ -230,8 +233,8 @@ void LuaObject::callLuaField(const std::string_view field, const T&... args)
     if (rets > 0)
         g_lua.pop(rets);
 
-    if (it == m_events.end())
-        m_events[fieldStr] = rets > -1;
+    if (rets > -1)
+        m_events[fieldStr] = true;
 }
 
 template<typename... T>

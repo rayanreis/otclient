@@ -475,7 +475,8 @@ void LocalPlayer::setInventoryItem(const Otc::InventorySlot inventory, const Ite
         item->setDecaying(item->hasExpire() || item->hasClockExpire());
     }
 
-    callLuaField("onInventoryChange", inventory, item, oldItem);
+    // Unchecked: inventory UI handlers may connect after early login packets.
+    callLuaFieldUnchecked("onInventoryChange", inventory, item, oldItem);
 }
 
 void LocalPlayer::setInventoryCountCache(std::map<std::pair<uint16_t, uint8_t>, uint32_t> counts)

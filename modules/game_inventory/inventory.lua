@@ -137,15 +137,29 @@ local function inventoryEvent(player, slot, item, oldItem)
     end
 
     local slotPanel, toggler = getSlotInfo(ui)
+    if not slotPanel or not slotPanel.item or not toggler then
+        return
+    end
 
-    slotPanel.item:setItem(item)
-    toggler:setEnabled(not item)
+    if item then
+        slotPanel.item:setItem(item)
+        toggler:setEnabled(false)
+    else
+        slotPanel.item:clearItem()
+        toggler:setEnabled(true)
+    end
     slotPanel.item:setWidth(34)
     slotPanel.item:setHeight(34)
-    
-    slotPanel.item:setShowDuration(g_game.getFeature(GameThingClock) and modules.client_options.getOption('showExpiryInInvetory'))
-    slotPanel.item:setShowCharges(g_game.getFeature(GameThingCounter) and modules.client_options.getOption('showExpiryInInvetory'))
-    ItemsDatabase.setTier(slotPanel.item, item)
+
+    local showExpiry = false
+    if modules.client_options then
+        showExpiry = modules.client_options.getOption('showExpiryInInvetory')
+    end
+    slotPanel.item:setShowDuration(g_game.getFeature(GameThingClock) and showExpiry)
+    slotPanel.item:setShowCharges(g_game.getFeature(GameThingCounter) and showExpiry)
+    if ItemsDatabase and ItemsDatabase.setTier then
+        ItemsDatabase.setTier(slotPanel.item, item)
+    end
 
     if slot == InventorySlotLeft then
         if item and modules.game_proficiency then
@@ -260,6 +274,14 @@ inventoryController = Controller:new()
 inventoryController:setUI('inventory', modules.game_interface.getMainRightPanel())
 
 function inventoryController:onInit()
+    -- Connect before login inventory packets arrive. Registering only in
+    -- onGameStart races with Set/DeleteInventory and left ghost items in every slot.
+    inventoryController:registerEvents(LocalPlayer, {
+        onInventoryChange = inventoryEvent,
+        onSoulChange = onSoulChange,
+        onFreeCapacityChange = onFreeCapacityChange
+    })
+
     refreshInventory_panel()
     local ui = getInventoryUi()
 
@@ -298,11 +320,6 @@ function inventoryController:onGameStart()
             end
         end
     end
-    inventoryController:registerEvents(LocalPlayer, {
-        onInventoryChange = inventoryEvent,
-        onSoulChange = onSoulChange,
-        onFreeCapacityChange = onFreeCapacityChange
-    }):execute()
 
     inventoryController:registerEvents(g_game, {
         onWalk = walkEvent,

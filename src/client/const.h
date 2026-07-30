@@ -719,7 +719,9 @@ namespace Otc
         MapMarkRedEast,
         MapMarkRedWest,
         MapMarkGreenNorth,
-        MapMarkGreenSouth
+        MapMarkGreenSouth,
+        MapMarkPositionGem = 20, // custom Position Gem heart (data/images/game/minimap/flag20.png)
+        MapMarkClear = 21        // transparent overwrite used to clear Position Gem marks
     };
 
     enum VipState : uint8_t
