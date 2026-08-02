@@ -196,6 +196,8 @@ bool LocalPlayer::autoWalk(const Position& destination, const bool retry)
             return;
         }
 
+        // Protocol allows at most 127 steps per auto-walk packet. Keep walking
+        // from the end of this segment until the real destination is reached.
         if (result->path.size() > 127)
             result->path.resize(127);
 
@@ -205,9 +207,9 @@ bool LocalPlayer::autoWalk(const Position& destination, const bool retry)
             return;
         }
 
-        if (self->m_autoWalkDestination != result->destination) {
-            self->m_lastAutoWalkPosition = result->destination;
-        }
+        const auto pathPositions = result->start.translatedToDirections(result->path);
+        if (!pathPositions.empty())
+            self->m_lastAutoWalkPosition = pathPositions.back();
 
         g_game.autoWalk(result->path, result->start);
     });

@@ -348,15 +348,37 @@ local function setupMasterCheckboxes(hudWindow)
     end
 end
 
-local function applyRowIcon(widget, condition)
-    if condition.path then
-        widget.icon:setImageSource(condition.path)
-    else
-        widget.icon:setImageSource('/images/game/states/player-state-flags')
-        local clipIndex = condition.clip or 1
-        local clipX = (clipIndex - 1) * 9
-        widget.icon:setImageClip(clipX .. ' 0 9 9')
+local function resolveConditionImagePath(path)
+    if not path or path == '' then
+        return nil
     end
+    if path:sub(1, 1) == '/' then
+        return path
+    end
+    return '/modules/game_healthcircle/' .. path
+end
+
+local function applyConditionIcon(icon, condition)
+    if not icon then
+        return
+    end
+
+    local path = resolveConditionImagePath(condition.path)
+    if path then
+        -- Clear any leftover sprite-sheet clip so the full PNG is shown.
+        icon:setImageClip('0 0 0 0')
+        icon:setImageSource(path)
+        return
+    end
+
+    icon:setImageSource('/images/game/states/player-state-flags')
+    local clipIndex = condition.clip or 1
+    local clipX = (clipIndex - 1) * 9
+    icon:setImageClip(clipX .. ' 0 9 9')
+end
+
+local function applyRowIcon(widget, condition)
+    applyConditionIcon(widget.icon, condition)
 end
 
 local function createConditionRow(condition, parent)
@@ -507,19 +529,7 @@ function StatusIconBar.isConditionActive(player, condition, states)
 end
 
 local function applyIconWidgetStyle(container, condition)
-    local icon = container:getChildById('icon')
-    if not icon then
-        return
-    end
-
-    if condition.path then
-        icon:setImageSource(condition.path)
-    else
-        icon:setImageSource('/images/game/states/player-state-flags')
-        local clipIndex = condition.clip or 1
-        local clipX = (clipIndex - 1) * 9
-        icon:setImageClip(clipX .. ' 0 9 9')
-    end
+    applyConditionIcon(container:getChildById('icon'), condition)
 end
 
 local function cancelWidgetEvent(widget, eventName)

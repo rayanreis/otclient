@@ -1097,9 +1097,8 @@ PathFindResult_ptr Map::newFindPath(const Position& start, const Position& goal,
                 if (!it->second) // no way
                     continue;
 
-                if (it->second->unseen > 50)
-                    continue;
-
+                // Allow long minimap routes through tiles not yet marked WasSeen.
+                // The old unseen>50 cap broke city-scale clicks (e.g. across Carlin).
                 const float diagonal = ((i == 0 || j == 0) ? 1.0f : 3.0f);
                 float cost = it->second->cost * diagonal;
                 cost += diagonal * (50.0f * std::max<float>(5.0f, it->second->pos.distance(goal))); // heuristic
@@ -1117,11 +1116,7 @@ PathFindResult_ptr Map::newFindPath(const Position& start, const Position& goal,
 
     if (dstNode) {
         while (dstNode && dstNode->prev) {
-            if (dstNode->unseen) {
-                ret->path.clear();
-            } else {
-                ret->path.push_back(dstNode->prev->pos.getDirectionFromPosition(dstNode->pos));
-            }
+            ret->path.push_back(dstNode->prev->pos.getDirectionFromPosition(dstNode->pos));
             dstNode = dstNode->prev;
         }
         std::reverse(ret->path.begin(), ret->path.end());
