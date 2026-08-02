@@ -329,7 +329,7 @@ return {
         end
     },
     crosshair                         = {
-        value = 'default',
+        value = 'disabled',
         action = function(value, options, controller, panels, extraWidgets)
             local crossPath = '/images/game/crosshair/'
             local newValue = value

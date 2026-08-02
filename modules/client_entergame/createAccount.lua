@@ -671,7 +671,10 @@ function createWidgetAccount()
                 reportRequestWarning("getaccountcreationstatus", err, "fx createWidgetAccount")
                 return
             end
-            MainWindowsCreateAccount = g_ui.displayUI('createAccount')
+            MainWindowsCreateAccount = g_ui.displayUI('/client_entergame/createAccount')
+            if not MainWindowsCreateAccount then
+                return
+            end
             -- LuaFormatter off
             UIwidgetImagen.AccountData = MainWindowsCreateAccount.imagesBanner.accountdatainvalid
             UIwidgetImagen.AllData = MainWindowsCreateAccount.imagesBanner.banneralldatainvalid

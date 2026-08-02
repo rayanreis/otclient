@@ -477,72 +477,18 @@ local selectedType = nil
 local suppressGrabberRelease = false
 local useWithCursorName = nil
 local restoredMapCursorAnimations = nil
-local savedCrosshairOption = nil
-local useWithMarkWidget = nil
-
-local function destroyUseWithMark()
-    if useWithMarkWidget and not useWithMarkWidget:isDestroyed() then
-        useWithMarkWidget:destroy()
-    end
-    useWithMarkWidget = nil
-end
-
-local function ensureUseWithMark()
-    if useWithMarkWidget and not useWithMarkWidget:isDestroyed() then
-        return useWithMarkWidget
-    end
-    if not gameRootPanel then
-        return nil
-    end
-
-    useWithMarkWidget = g_ui.createWidget('UIWidget', gameRootPanel)
-    useWithMarkWidget:setId('useWithCrosshairMark')
-    useWithMarkWidget:setPhantom(true)
-    useWithMarkWidget:setFocusable(false)
-    useWithMarkWidget:setSize({
-        width = 32,
-        height = 32
-    })
-    useWithMarkWidget:setImageSource('/images/game/crosshair/default')
-    useWithMarkWidget:raise()
-    return useWithMarkWidget
-end
 
 local function updateUseWithVisuals(mousePosition)
     -- Prefer the OS crosshair: custom pixmap cursors often fail to show on WSL/X11
     -- even when pushCursor succeeds and targeting still works.
     g_window.setSystemCursor('cross')
 
-    local mark = ensureUseWithMark()
-    if mark and mousePosition then
-        mark:setVisible(true)
-        mark:setPosition({
-            x = mousePosition.x - 16,
-            y = mousePosition.y - 16
-        })
-        mark:raise()
-    end
-
-    if gameMapPanel and mousePosition then
-        if gameMapPanel.updateHoveredTile then
-            gameMapPanel:updateHoveredTile(mousePosition)
-        end
+    if gameMapPanel and mousePosition and gameMapPanel.updateHoveredTile then
+        gameMapPanel:updateHoveredTile(mousePosition)
     end
 end
 
 local function clearUseWithCursor()
-    destroyUseWithMark()
-
-    if savedCrosshairOption ~= nil and gameMapPanel then
-        local previous = savedCrosshairOption
-        savedCrosshairOption = nil
-        if previous and previous ~= 'disabled' then
-            gameMapPanel:setCrosshairTexture('/images/game/crosshair/' .. previous)
-        else
-            gameMapPanel:setCrosshairTexture('')
-        end
-    end
-
     if useWithCursorName then
         g_mouse.popCursor(useWithCursorName)
         useWithCursorName = nil
@@ -562,13 +508,6 @@ local function pushUseWithCursor(mousePosition)
         restoredMapCursorAnimations = modules.client_options and
             modules.client_options.getOption('showAnimatedCursor') or false
         gameMapPanel:setCursorAnimations(false)
-    end
-
-    -- Force the tile crosshair on while targeting (even if the option is Disabled).
-    if gameMapPanel and savedCrosshairOption == nil then
-        savedCrosshairOption = modules.client_options and
-            modules.client_options.getOption('crosshair') or 'disabled'
-        gameMapPanel:setCrosshairTexture('/images/game/crosshair/default')
     end
 
     -- Keep a cursor on the stack so MapView hover cursors stay suppressed.

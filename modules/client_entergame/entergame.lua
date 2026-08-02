@@ -166,7 +166,7 @@ end
 
 -- public functions
 function EnterGame.init()
-    enterGame = g_ui.displayUI('entergame')
+    enterGame = g_ui.displayUI('/client_entergame/entergame')
     Keybind.new("Misc.", "Change Character", "Ctrl+G", "")
     Keybind.bind("Misc.", "Change Character", {
       {

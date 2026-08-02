@@ -86,8 +86,8 @@ function controllerCyclopedia:onGameStart()
             magicalArchives = { obj = magicalArchives, func = showMagicalArchives },
         }
 
-        g_ui.importStyle("cyclopedia_widgets")
-        g_ui.importStyle("cyclopedia_pages")
+        g_ui.importStyle("/game_cyclopedia/cyclopedia_widgets")
+        g_ui.importStyle("/game_cyclopedia/cyclopedia_pages")
 
         controllerCyclopedia:registerEvents(g_game, {
             onResourcesBalanceChange = Cyclopedia.onResourcesBalanceChange,

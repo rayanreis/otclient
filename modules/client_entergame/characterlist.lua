@@ -473,7 +473,10 @@ end
 local function onLoginWait(message, time)
     CharacterList.destroyLoadBox()
 
-    waitingWindow = g_ui.displayUI('waitinglist')
+    waitingWindow = g_ui.displayUI('/client_entergame/waitinglist')
+    if not waitingWindow then
+        return
+    end
 
     local label = waitingWindow:getChildById('infoLabel')
     label:setText(message)
@@ -680,7 +683,10 @@ end
 
 function CharacterList.create(characters, account, otui)
     if not otui then
-        otui = 'characterlist'
+        otui = '/client_entergame/characterlist'
+    elseif not otui:find('^/') then
+        -- Relative OTUI names fail when create() runs from a network callback.
+        otui = '/client_entergame/' .. otui
     end
 
     if charactersWindow then
@@ -688,6 +694,11 @@ function CharacterList.create(characters, account, otui)
     end
 
     charactersWindow = g_ui.displayUI(otui)
+    if not charactersWindow then
+        g_logger.error("Failed to load character list UI from '" .. tostring(otui) .. "'")
+        return
+    end
+
     characterList = charactersWindow:getChildById('characters')
     panelSort = charactersWindow:getChildById('characterTable')
     autoReconnectButton = charactersWindow:getChildById('autoReconnect')
