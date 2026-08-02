@@ -617,8 +617,11 @@ function Cyclopedia.Items.onChangeCustomPrice(widget)
 end
 
 function showItems()
-    -- Use explicit module-relative path to avoid lookup falling back to root (/items.otui).
-    UI = g_ui.loadUI("tab/items/items", contentContainer)
+    -- Absolute path: opened from mainpanel callbacks where relative UI resolve fails.
+    UI = g_ui.loadUI("/game_cyclopedia/tab/items/items", contentContainer)
+    if not UI then
+        return
+    end
     UI:show()
     Cyclopedia.Items.VocFilter = false
     Cyclopedia.Items.LevelFilter = false

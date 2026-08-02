@@ -265,8 +265,11 @@ local charms = {
 local isModernUI = false
 function showCharms()
     isModernUI = g_game.getClientVersion() >= 1410
-    local UIUX = isModernUI and "charms1410" or "charms"
+    local UIUX = isModernUI and "/game_cyclopedia/tab/charms/charms1410" or "/game_cyclopedia/tab/charms/charms"
     UI = g_ui.loadUI(UIUX, contentContainer)
+    if not UI then
+        return
+    end
     UI:show()
     g_game.requestBestiary()
     controllerCyclopedia.ui.CharmsBase:setVisible(true)

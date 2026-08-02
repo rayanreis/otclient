@@ -58,7 +58,10 @@ local function open(parent)
 end
 
 function showCharacter()
-    characterPanel = g_ui.loadUI("character", contentContainer)
+    characterPanel = g_ui.loadUI("/game_cyclopedia/tab/character/character", contentContainer)
+    if not characterPanel then
+        return
+    end
     UI = characterPanel
     characterPanel:show()
     UI.selectedOption = "InfoBase"

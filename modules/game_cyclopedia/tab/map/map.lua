@@ -77,7 +77,10 @@ end
 
 function showMap()
     g_minimap.saveOtmm('/minimap.otmm')
-    UI = g_ui.loadUI("map", contentContainer)
+    UI = g_ui.loadUI("/game_cyclopedia/tab/map/map", contentContainer)
+    if not UI then
+        return
+    end
     UI:show()
     controllerCyclopedia:registerEvents(LocalPlayer, {
         onPositionChange = Cyclopedia.onUpdateCameraPosition

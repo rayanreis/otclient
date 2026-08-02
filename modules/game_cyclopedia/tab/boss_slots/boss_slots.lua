@@ -1,7 +1,10 @@
 local UI = nil
 
 function showBossSlot()
-    UI = g_ui.loadUI("boss_slots", contentContainer)
+    UI = g_ui.loadUI("/game_cyclopedia/tab/boss_slots/boss_slots", contentContainer)
+    if not UI then
+        return
+    end
     UI:show()
     UI.RightBase.LockLabel:setText("Unlocks at 1500 Boss Points")
     g_game.requestBossSlootInfo()

@@ -1,7 +1,10 @@
 local UI = nil
 
 function showMagicalArchives()
-    UI = g_ui.loadUI("magicalArchives", contentContainer)
+    UI = g_ui.loadUI("/game_cyclopedia/tab/magicalArchives/magicalArchives", contentContainer)
+    if not UI then
+        return
+    end
     UI:show()
     controllerCyclopedia.ui.CharmsBase:setVisible(false)
     controllerCyclopedia.ui.GoldBase:setVisible(false)

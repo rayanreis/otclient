@@ -1,6 +1,9 @@
 local UI = nil
 function showBosstiary()
-    UI = g_ui.loadUI("bosstiary", contentContainer)
+    UI = g_ui.loadUI("/game_cyclopedia/tab/bosstiary/bosstiary", contentContainer)
+    if not UI then
+        return
+    end
     UI:show()
     Cyclopedia.Bosstiary.Page = 1
     g_game.requestBosstiaryInfo()

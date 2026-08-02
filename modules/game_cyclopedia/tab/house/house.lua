@@ -1,7 +1,10 @@
 local UI = nil
 
 function showHouse()
-    UI = g_ui.loadUI("house", contentContainer)
+    UI = g_ui.loadUI("/game_cyclopedia/tab/house/house", contentContainer)
+    if not UI then
+        return
+    end
     UI:show()
     UI.LateralBase.LayerScrollbar.decrementButton:setVisible(false)
     UI.LateralBase.LayerScrollbar.incrementButton:setVisible(false)

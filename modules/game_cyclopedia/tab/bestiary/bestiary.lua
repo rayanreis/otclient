@@ -121,7 +121,10 @@ function Cyclopedia.loadBestiaryOverview(name, creatures, animusMasteryPoints)
 end
 
 function showBestiary()
-    UI = g_ui.loadUI("bestiary", contentContainer)
+    UI = g_ui.loadUI("/game_cyclopedia/tab/bestiary/bestiary", contentContainer)
+    if not UI then
+        return
+    end
     UI:show()
 
     UI.ListBase.CategoryList:setVisible(true)
