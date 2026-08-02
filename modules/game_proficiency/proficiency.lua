@@ -561,6 +561,9 @@ function show()
     if not WeaponProficiency.window then
         createWindow()
     end
+    if not WeaponProficiency.window then
+        return
+    end
 
     -- Reset search filter and clear search text
     WeaponProficiency.searchFilter = nil
@@ -859,7 +862,13 @@ end
 
 -- Create the proficiency window
 function createWindow()
-    WeaponProficiency.window = g_ui.displayUI('proficiency')
+    -- Absolute module path: createWindow is often opened from a mainpanel callback,
+    -- where relative UI resolution falls back to '/proficiency.otui' and fails.
+    WeaponProficiency.window = g_ui.displayUI('/game_proficiency/proficiency')
+    if not WeaponProficiency.window then
+        g_logger.error('Failed to create weapon proficiency window')
+        return
+    end
     WeaponProficiency.window:hide()
 
     WeaponProficiency.displayItemPanel = WeaponProficiency.window:recursiveGetChildById("itemPanel")
