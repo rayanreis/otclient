@@ -1,0 +1,31 @@
+ArenaTimerPanel < Panel
+  id: arenaTimerPanel
+  anchors.horizontalCenter: parent.horizontalCenter
+  anchors.top: parent.top
+  margin-top: 12
+  width: 160
+  height: 36
+  focusable: false
+  phantom: true
+  background-color: #000000aa
+  border-width: 1
+  border-color: #c9a227
+  visible: false
+
+  Label
+    id: title
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 2
+    text: Arena
+    color: #f0d78c
+    font: verdana-11px-rounded
+
+  Label
+    id: time
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-bottom: 2
+    text: 30:00
+    color: #ffffff
+    font: verdana-11px-rounded

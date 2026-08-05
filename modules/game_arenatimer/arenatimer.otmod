@@ -1,0 +1,11 @@
+Module
+  name: game_arenatimer
+  description: Arena session countdown timer
+  author: canary
+  website:
+  sandboxed: true
+  autoload: true
+  scripts: [ arenatimer ]
+  dependencies: [ gamelib, game_interface ]
+  @onLoad: init()
+  @onUnload: terminate()
