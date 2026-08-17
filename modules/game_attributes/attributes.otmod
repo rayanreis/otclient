@@ -1,0 +1,11 @@
+Module
+  name: game_attributes
+  description: Attribute build points allocation (STR/DEX/CON/INT/LUCK)
+  author: canary
+  website:
+  sandboxed: true
+  autoload: true
+  scripts: [ attributes ]
+  dependencies: [ gamelib, game_interface ]
+  @onLoad: init()
+  @onUnload: terminate()

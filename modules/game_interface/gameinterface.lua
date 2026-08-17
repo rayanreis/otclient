@@ -105,6 +105,10 @@ function init()
 
     bottomSplitter = gameRootPanel:getChildById('bottomSplitter')
     gameMapPanel = gameRootPanel:getChildById('gameMapPanel')
+    -- Drop any leftover hover handler from older crosshair experiments.
+    gameMapPanel.onMouseMove = function()
+        return false
+    end
     gameMapSidePanel = gameRootPanel:getChildById('gameMapSidePanel')
     gameMainRightPanel = gameRootPanel:getChildById('gameMainRightPanel')
     gameRightPanel = gameRootPanel:getChildById('gameRightPanel')
@@ -254,6 +258,7 @@ function terminate()
     end
 
     logoutButton:destroy()
+    clearUseWithCursor()
     gameRootPanel:destroy()
     Keybind.delete("Movement", "Stop All Actions")
     Keybind.delete("Misc", "Logout")
@@ -267,6 +272,7 @@ function onGameStart()
 end
 
 function onGameEnd()
+    clearUseWithCursor()
     hide()
 end
 
@@ -477,25 +483,85 @@ local selectedType = nil
 local suppressGrabberRelease = false
 local useWithCursorName = nil
 local restoredMapCursorAnimations = nil
+local useWithCursorWidget = nil
 
-local function updateUseWithVisuals(mousePosition)
-    -- Prefer the OS crosshair: custom pixmap cursors often fail to show on WSL/X11
-    -- even when pushCursor succeeds and targeting still works.
-    g_window.setSystemCursor('cross')
-
-    if gameMapPanel and mousePosition and gameMapPanel.updateHoveredTile then
-        gameMapPanel:updateHoveredTile(mousePosition)
+function destroyUseWithCursorWidget()
+    if useWithCursorWidget and not useWithCursorWidget:isDestroyed() then
+        useWithCursorWidget:destroy()
     end
+    useWithCursorWidget = nil
 end
 
-local function clearUseWithCursor()
+local function createCrossBar(parent, width, height)
+    local outline = g_ui.createWidget('UIWidget', parent)
+    outline:setPhantom(true)
+    outline:setFocusable(false)
+    outline:setWidth(width)
+    outline:setHeight(height)
+    outline:setBackgroundColor('#000000')
+    outline:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+    outline:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
+
+    local fill = g_ui.createWidget('UIWidget', outline)
+    fill:setPhantom(true)
+    fill:setFocusable(false)
+    fill:setWidth(math.max(1, width - 2))
+    fill:setHeight(math.max(1, height - 2))
+    fill:setBackgroundColor('#ffffff')
+    fill:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
+    fill:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
+end
+
+local function ensureUseWithCross()
+    if useWithCursorWidget and not useWithCursorWidget:isDestroyed() then
+        return useWithCursorWidget
+    end
+
+    local mark = g_ui.createWidget('UIWidget', rootWidget)
+    mark:setId('useWithCursor')
+    mark:setPhantom(true)
+    mark:setFocusable(false)
+    mark:setSize({ width = 22, height = 22 })
+    createCrossBar(mark, 18, 4)
+    createCrossBar(mark, 4, 18)
+    useWithCursorWidget = mark
+    return mark
+end
+
+local function updateUseWithVisuals(mousePosition)
+    mousePosition = mousePosition or g_window.getMousePosition()
+    if not mousePosition then
+        return
+    end
+
+    -- Keep tile highlight, then force the + on top so pointing-hand cannot win.
+    if gameMapPanel and gameMapPanel.updateHoveredTile then
+        gameMapPanel:updateHoveredTile(mousePosition)
+    end
+
+    -- Hide the OS pointer. setSystemCursor after this would unhide it again
+    -- (and WSLg still draws a Windows arrow for X11 font/pixmap cursors).
+    g_window.hideMouse()
+
+    local mark = ensureUseWithCross()
+    mark:setVisible(true)
+    mark:setPosition({
+        x = mousePosition.x - 11,
+        y = mousePosition.y - 11
+    })
+    mark:raise()
+end
+
+function clearUseWithCursor()
+    destroyUseWithCursorWidget()
+
     if useWithCursorName then
         g_mouse.popCursor(useWithCursorName)
         useWithCursorName = nil
     end
+    g_window.showMouse()
     g_window.restoreMouseCursor()
 
-    -- Restore map hover cursors if we disabled them for targeting.
     if restoredMapCursorAnimations ~= nil and gameMapPanel then
         gameMapPanel:setCursorAnimations(restoredMapCursorAnimations)
         restoredMapCursorAnimations = nil
@@ -503,14 +569,12 @@ local function clearUseWithCursor()
 end
 
 local function pushUseWithCursor(mousePosition)
-    -- Pause map animated cursors so they cannot overwrite the crosshair each mouse move.
     if gameMapPanel and restoredMapCursorAnimations == nil then
         restoredMapCursorAnimations = modules.client_options and
             modules.client_options.getOption('showAnimatedCursor') or false
         gameMapPanel:setCursorAnimations(false)
     end
 
-    -- Keep a cursor on the stack so MapView hover cursors stay suppressed.
     if not useWithCursorName then
         g_mouse.pushCursor('target')
         useWithCursorName = 'target'
@@ -753,7 +817,9 @@ function createThingMenu(menuPosition, lookThing, useThing, creatureThing)
                     g_game.inspectCharacter(lookThing:getId(), InspectCreaturesTypes.INSPECT_CREATURE)
                 elseif canInspect then
                     local pos = lookThing:getPosition()
-                    if pos and pos:isValid() then
+                    -- Lua positions are tables; they have no :isValid() method.
+                    -- Inventory/container slots use x=65535 and must use cyclopedia inspect.
+                    if pos and Position.isValid(pos) and pos.x ~= 65535 then
                         g_game.inspectionNormalObject(pos)
                     else
                         g_game.inspectionObject(InspectObjectTypes.INSPECT_CYCLOPEDIA, lookThing:getId())
@@ -1096,6 +1162,13 @@ function processMouseAction(menuPosition, mouseButton, autoWalkPos, lookThing, u
                 end
             end
         end
+    end
+
+    -- Convert gold/platinum/crystal with one right-click (skip use-with and the menu).
+    if mouseButton == MouseRightButton and keyboardModifiers == KeyboardNoModifier
+        and useThing and useThing:isGoldConversionItem() then
+        g_game.use(useThing)
+        return true
     end
 
     if g_platform.isMobile() then

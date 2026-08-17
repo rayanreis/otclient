@@ -1,17 +1,24 @@
 local iconTopMenu = nil
+
+local function setBarFill(bar, current, maximum)
+    local totalWidth = bar.total:getWidth()
+    local fillWidth = 0
+    if maximum > 0 and current > 0 then
+        fillWidth = math.floor((totalWidth * math.min(current, maximum)) / maximum)
+        fillWidth = math.max(12, math.min(totalWidth, fillWidth))
+    end
+    bar.current:setWidth(fillWidth)
+    bar.text:setText(string.format('%d/%d', current, maximum))
+end
+
 local function healthManaEvent()
     local player = g_game.getLocalPlayer()
     if not player then
         return
     end
 
-    healthManaController.ui.health.text:setText(player:getHealth())
-    healthManaController.ui.health.current:setWidth(math.max(12, math.ceil(
-        (healthManaController.ui.health.total:getWidth() * player:getHealth()) / player:getMaxHealth())))
-
-    healthManaController.ui.mana.text:setText(player:getMana())
-    healthManaController.ui.mana.current:setWidth(math.max(12, math.ceil(
-        (healthManaController.ui.mana.total:getWidth() * player:getMana()) / player:getMaxMana())))
+    setBarFill(healthManaController.ui.health, player:getHealth(), player:getMaxHealth())
+    setBarFill(healthManaController.ui.mana, player:getMana(), player:getMaxMana())
 end
 
 healthManaController = Controller:new()

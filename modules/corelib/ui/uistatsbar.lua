@@ -115,11 +115,13 @@ function UIStatsBar:setValue(value, total)
     self.currentValue = value
     self.currentTotal = total
 
-    -- Bar dimension
+    -- Bar dimension: fill the existing widget, never grow it
     if self.statsOrientation == 'horizontal' then
-        self.bar:setWidth(((self:getWidth() - 2) * value) / total)
+        local maxWidth = math.max(0, self:getWidth() - 2)
+        self.bar:setWidth(math.min(maxWidth, (maxWidth * value) / total))
     elseif self.statsOrientation == 'vertical' then
-        self.bar:setHeight(((self:getHeight() - 2) * value) / total)
+        local maxHeight = math.max(0, self:getHeight() - 2)
+        self.bar:setHeight(math.min(maxHeight, (maxHeight * value) / total))
     else
         return
     end

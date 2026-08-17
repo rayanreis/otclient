@@ -452,7 +452,7 @@ end
 -- =            Controller                  =
 -- =============================================*/
 function rewardWallController:onInit()
-    g_ui.importStyle("styles/style.otui")
+    g_ui.importStyle("/game_rewardwall/styles/style.otui")
     rewardWallController:loadHtml('game_rewardwall.html')
     rewardWallController.ui:hide()
 
@@ -530,7 +530,10 @@ function rewardWallController:onClickDisplayWindowsPickRewardWindow(event)
             else
                 itemsToSelect = itemsToSelect or 1
             end
-            windowsPickWindow = g_ui.displayUI('styles/pickreward')
+            windowsPickWindow = g_ui.displayUI('/game_rewardwall/styles/pickreward')
+            if not windowsPickWindow then
+                return
+            end
             windowsPickWindow:show()
             windowsPickWindow:getChildById('capacity'):setText("Free capacity: " ..
                                                                    g_game:getLocalPlayer():getFreeCapacity() .. " oz")

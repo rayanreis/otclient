@@ -3,7 +3,6 @@ StoreWindow
   size: 278 227
   padding: 3
   visible: false
-  @onEscape: transferCancel()
 
   Label
     id: transferPointsLabel

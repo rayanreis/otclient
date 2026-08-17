@@ -1112,12 +1112,12 @@ function onLevelChange(localPlayer, value, percent)
 end
 
 function onHealthChange(localPlayer, health, maxHealth)
-    setSkillValue('health', comma_value(health))
+    setSkillValue('health', comma_value(health) .. ' / ' .. comma_value(maxHealth))
     checkAlert('health', health, maxHealth, 30)
 end
 
 function onManaChange(localPlayer, mana, maxMana)
-    setSkillValue('mana', comma_value(mana))
+    setSkillValue('mana', comma_value(mana) .. ' / ' .. comma_value(maxMana))
     checkAlert('mana', mana, maxMana, 30)
 end
 

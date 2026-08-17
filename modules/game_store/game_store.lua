@@ -1190,7 +1190,10 @@ function displayChangeName(offer)
     controllerShop.ui:hide()
     g_game.buyStoreOffer(offer.id, GameStore.ClientOfferTypes.CLIENT_STORE_OFFER_OTHER) -- canary send this packets?
     destroyWindow(changeNameWindow)
-    changeNameWindow = g_ui.displayUI('style/changename')
+    changeNameWindow = g_ui.displayUI('/game_store/style/changename')
+    if not changeNameWindow then
+        return
+    end
     changeNameWindow:show()
     local newName = changeNameWindow:getChildById('transferPointsText')
     newName:setText('')
@@ -1214,7 +1217,10 @@ end
 
 function transferPoints()
     destroyWindow(transferPointsWindow)
-    transferPointsWindow = g_ui.displayUI('style/transferpoints')
+    transferPointsWindow = g_ui.displayUI('/game_store/style/transferpoints')
+    if not transferPointsWindow then
+        return
+    end
     transferPointsWindow:show()
 
     local playerBalance = g_game.getLocalPlayer():getResourceBalance(ResourceTypes.COIN_TRANSFERRABLE)
@@ -1295,4 +1301,26 @@ function search()
         close(controllerShop.ui.openedCategory)
     end
     g_game.sendRequestStoreSearch(controllerShop.ui.SearchEdit:getText(), 0, 1)
+end
+
+--- Open the store and search for an offer by name (used by attribute reset flow).
+function openSearch(query)
+    show()
+    query = tostring(query or '')
+    if query == '' then
+        return
+    end
+
+    controllerShop:scheduleEvent(function()
+        if not controllerShop.ui then
+            return
+        end
+        if controllerShop.ui.SearchEdit then
+            controllerShop.ui.SearchEdit:setText(query)
+        end
+        if controllerShop.ui.openedCategory ~= nil then
+            close(controllerShop.ui.openedCategory)
+        end
+        g_game.sendRequestStoreSearch(query, 0, 1)
+    end, 600)
 end

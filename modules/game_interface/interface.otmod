@@ -56,7 +56,7 @@ Module
     - game_tutorial
     - game_inspect
     - game_taskboard
-    - game_wheel
+    - game_attributes
     - game_proficiency
 
   @onLoad: init()

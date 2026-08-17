@@ -1,0 +1,144 @@
+AttributeAlertButton < UIButton
+  id: attributeAlertButton
+  anchors.top: parent.top
+  anchors.right: parent.right
+  margin-top: 8
+  margin-right: 8
+  width: 36
+  height: 36
+  focusable: false
+  phantom: false
+  visible: false
+  text: !
+  font: verdana-11px-rounded
+  color: #ffffff
+  background-color: #d42222ee
+  border-width: 2
+  border-color: #ffd27a
+  opacity: 1.0
+
+AttributeBuildWindow < MainWindow
+  id: attributeBuildWindow
+  !text: tr('Attribute Build')
+  size: 420 390
+  @onEscape: modules.game_attributes.hideWindow()
+
+  Label
+    id: pointsLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    text-align: center
+    font: verdana-11px-rounded
+    color: #f0d78c
+    text: Points remaining: 0
+
+  Label
+    id: powerLabel
+    anchors.top: pointsLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    text-align: center
+    font: verdana-11px-rounded
+    color: #c8c8c8
+    text: Character Power: 0
+
+  Panel
+    id: attrsPanel
+    anchors.top: powerLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 12
+    height: 200
+    layout: verticalBox
+    spacing: 4
+
+  HorizontalSeparator
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: confirmButton.top
+    margin-bottom: 8
+
+  Button
+    id: resetButton
+    !text: tr('Reset')
+    width: 80
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    @onClick: modules.game_attributes.resetAttributes()
+
+  Button
+    id: cancelButton
+    !text: tr('Cancel')
+    width: 80
+    anchors.right: confirmButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    @onClick: modules.game_attributes.hideWindow()
+
+  Button
+    id: confirmButton
+    !text: tr('Confirm')
+    width: 90
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    @onClick: modules.game_attributes.confirmAttributes()
+
+AttributeRow < Panel
+  height: 28
+
+  Label
+    id: nameLabel
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    width: 110
+    font: verdana-11px-rounded
+    color: #ffffff
+
+  UIWidget
+    id: infoIcon
+    anchors.left: nameLabel.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    size: 12 12
+    image-source: /images/icons/show_gui_help_grey
+    phantom: false
+
+  Button
+    id: minusButton
+    !text: '-'
+    width: 24
+    height: 24
+    anchors.right: valueLabel.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+
+  Label
+    id: valueLabel
+    anchors.right: plusButton.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+    width: 28
+    text-align: center
+    font: verdana-11px-rounded
+    color: #ffffff
+    text: 0
+
+  Button
+    id: plusButton
+    !text: '+'
+    width: 24
+    height: 24
+    anchors.right: maxButton.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 4
+
+  Button
+    id: maxButton
+    !text: tr('Max')
+    width: 36
+    height: 24
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter

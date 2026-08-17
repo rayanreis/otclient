@@ -25,11 +25,11 @@ PhantomMiniWindow
 
     Label
       id: text
-      !text: '155'
+      !text: '155/155'
       anchors.right: parent.right
       anchors.verticalCenter: parent.verticalCenter
-      width: 44
-      text-align: left
+      width: 72
+      text-align: right
       color: #c0c0c0ff
 
     UIWidget
@@ -74,11 +74,11 @@ PhantomMiniWindow
 
     Label
       id: text
-      !text: '60'
+      !text: '60/60'
       anchors.right: parent.right
       anchors.verticalCenter: parent.verticalCenter
-      width: 44
-      text-align: left
+      width: 72
+      text-align: right
       color: #c0c0c0ff
 
     UIWidget

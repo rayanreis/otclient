@@ -52,3 +52,25 @@ SpriteMaskYellow = 4
 function Thing:isTile()
   return false
 end
+
+-- Gold, platinum, and crystal coins convert by using themselves, not "use with".
+local GOLD_CONVERSION_IDS = {
+  [3031] = true, -- gold coin
+  [3035] = true, -- platinum coin
+  [3043] = true, -- crystal coin
+}
+
+function Thing:isGoldConversionItem()
+  return self:isItem() and GOLD_CONVERSION_IDS[self:getId()] or false
+end
+
+if not Thing._nativeIsMultiUse then
+  Thing._nativeIsMultiUse = Thing.isMultiUse
+end
+
+function Thing:isMultiUse()
+  if self:isGoldConversionItem() then
+    return false
+  end
+  return Thing._nativeIsMultiUse(self)
+end

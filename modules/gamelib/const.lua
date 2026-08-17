@@ -365,7 +365,8 @@ ExtendedIds = {
     MapShader = 6,
     NeedsUpdate = 7,
     SkullSummon = 202,
-    ArenaTimer = 203
+    ArenaTimer = 203,
+    AttributeBuild = 204
 }
 
 PreviewState = {

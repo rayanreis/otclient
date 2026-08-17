@@ -64,12 +64,15 @@ void UIItem::drawSelf(const DrawPoolType drawPane)
         if (countFont && m_alwaysShowCount && shouldDrawCount) {
             static constexpr Color STACK_COLOR(191, 191, 191);
             std::string countText;
-            if (displayCount < 1000) {
-                countText = std::to_string(displayCount);
-            } else if (displayCount < 10000) {
-                countText = fmt::format("{},{:03d}", displayCount / 1000, displayCount % 1000);
+            if (displayCount >= 1000) {
+                const int thousands = displayCount / 1000;
+                if (displayCount % 1000 == 0) {
+                    countText = fmt::format("{}k", thousands);
+                } else {
+                    countText = fmt::format("{}.{}k", thousands, (displayCount / 100) % 10);
+                }
             } else {
-                countText = fmt::format("{}K", displayCount / 1000);
+                countText = std::to_string(displayCount);
             }
             countFont->drawText(countText, Rect(m_rect.topLeft(), m_rect.bottomRight()), STACK_COLOR, Fw::AlignBottomRight);
         }

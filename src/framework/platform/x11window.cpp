@@ -1089,10 +1089,12 @@ void X11Window::showMouse()
 
 void X11Window::hideMouse()
 {
-    g_mainDispatcher.addEvent([&] {
-        if (m_cursor != X11None)
-            restoreMouseCursorNow();
+    g_mainDispatcher.addEvent([this] {
+        if (m_display == nullptr || m_window == 0)
+            return;
 
+        // Do not XUndefineCursor first: WSLg treats that as “use the Windows
+        // arrow” and then ignores the blank pixmap cursor.
         if (m_hiddenCursor == X11None) {
             char bm[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
             Pixmap pix = XCreateBitmapFromData(m_display, m_window, bm, 8, 8);
@@ -1107,17 +1109,15 @@ void X11Window::hideMouse()
         m_currentCursorId = -1;
         m_cursorFrame = 0;
         XDefineCursor(m_display, m_window, m_cursor);
+        XFlush(m_display);
     });
 }
 
 void X11Window::setMouseCursor(int cursorId)
 {
-    g_mainDispatcher.addEvent([&, cursorId] {
+    g_mainDispatcher.addEvent([this, cursorId] {
         if (cursorId >= (int)m_cursors.size() || cursorId < 0)
             return;
-
-        if (m_cursor != X11None)
-            restoreMouseCursorNow();
 
         const auto& state = m_cursors[cursorId];
         if (state.cursors.empty())
@@ -1130,6 +1130,7 @@ void X11Window::setMouseCursor(int cursorId)
             m_cursorTimer.restart();
         }
         XDefineCursor(m_display, m_window, m_cursor);
+        XFlush(m_display);
     });
 }
 
@@ -1138,9 +1139,6 @@ void X11Window::setSystemCursor(const std::string& cursorName)
     g_mainDispatcher.addEvent([this, cursorName] {
         if (m_display == nullptr || m_window == 0)
             return;
-
-        if (m_cursor != X11None)
-            restoreMouseCursorNow();
 
         const unsigned int shape = getSystemCursorShape(cursorName);
         Cursor cursor = X11None;
@@ -1163,13 +1161,16 @@ void X11Window::setSystemCursor(const std::string& cursorName)
         m_currentCursorId = -1;
         m_cursorFrame = 0;
         XDefineCursor(m_display, m_window, m_cursor);
+        XFlush(m_display);
     });
 }
 
 void X11Window::restoreMouseCursor()
 {
-    g_mainDispatcher.addEvent([&] {
+    g_mainDispatcher.addEvent([this] {
         restoreMouseCursorNow();
+        if (m_display)
+            XFlush(m_display);
     });
 }
 
